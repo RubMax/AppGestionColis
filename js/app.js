@@ -1,7 +1,6 @@
-// Configuration de l'application
+// Configuration de l'application - METTEZ VOTRE URL APPS SCRIPT ICI !
 const CONFIG = {
-    // REMPLACEZ CETTE URL PAR VOTRE URL APPS SCRIPT
-    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycby9zmfSadvog9NXvQuC-IYA2CeO88Wra3FPpUYg62gq7T_yKj28a-uUVeSpsnlrwuxnbA/exec' // Votre URL ici
+    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbzDa0WONITev7GJhplsixNzIFfDBxsRwGWxO4d--9w94bxpNDgC0amGEHTuAOOnK92LUw/exec'
 };
 
 // Variables globales
@@ -10,38 +9,53 @@ let dataTableInstance = null;
 
 // Initialisation de l'application
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Application initialisée');
+    console.log('URL Apps Script:', CONFIG.APPS_SCRIPT_URL);
+    
     initApp();
-    
-    // Écouteurs d'événements
-    document.getElementById('formEnregistrer').addEventListener('submit', enregistrerColis);
-    document.getElementById('formRetirer').addEventListener('submit', marquerCommeRetire);
-    document.getElementById('btnSearchProprietaire').addEventListener('click', rechercherParProprietaire);
-    document.getElementById('btnSearchBarcode').addEventListener('click', rechercherParCodeBarre);
-    document.getElementById('refreshTable').addEventListener('click', chargerColis);
-    
-    // Recherche en temps réel
-    document.getElementById('searchProprietaire').addEventListener('keyup', function(event) {
-        if (event.key === 'Enter') {
-            rechercherParProprietaire();
-        }
-    });
-    
-    document.getElementById('searchBarcode').addEventListener('keyup', function(event) {
-        if (event.key === 'Enter') {
-            rechercherParCodeBarre();
-        }
-    });
 });
 
 // Initialiser l'application
 function initApp() {
-    // Vérifier la configuration
-    if (CONFIG.APPS_SCRIPT_URL.includes('AKfycby...')) {
-        showAlert('⚠️ Configurez d\'abord l\'URL Apps Script dans CONFIG.APPS_SCRIPT_URL', 'warning');
-    }
+    // Tester la connexion à Apps Script
+    testConnexion();
     
+    // Charger les colis
     chargerColis();
+    
+    // Configurer la navigation
     configurerNavigation();
+    
+    // Afficher l'état de connexion
+    updateConnectionStatus();
+}
+
+// Tester la connexion à Apps Script
+function testConnexion() {
+    fetch(CONFIG.APPS_SCRIPT_URL + '?action=test')
+        .then(response => response.text())
+        .then(data => {
+            console.log('Connexion Apps Script OK:', data);
+            showConnectionStatus(true);
+        })
+        .catch(error => {
+            console.error('Erreur de connexion:', error);
+            showConnectionStatus(false);
+        });
+}
+
+// Afficher l'état de connexion
+function showConnectionStatus(connected) {
+    const statusElement = document.getElementById('connectionStatus');
+    if (statusElement) {
+        if (connected) {
+            statusElement.innerHTML = '<i class="fas fa-circle text-success me-1"></i> Connecté à Google Sheets';
+            statusElement.className = 'navbar-text text-light ms-auto d-none d-lg-block';
+        } else {
+            statusElement.innerHTML = '<i class="fas fa-circle text-warning me-1"></i> Mode local';
+            statusElement.className = 'navbar-text text-warning ms-auto d-none d-lg-block';
+        }
+    }
 }
 
 // Configurer la navigation fluide
@@ -63,34 +77,34 @@ function configurerNavigation() {
     });
 }
 
-// Charger tous les colis
+// ===========================
+// FONCTIONS PRINCIPALES
+// ===========================
+
+// Charger tous les colis depuis Google Sheets
 function chargerColis() {
     showLoadingTable();
     
     fetch(CONFIG.APPS_SCRIPT_URL + '?action=getAll')
         .then(response => {
             if (!response.ok) {
-                throw new Error('Erreur réseau: ' + response.status);
+                throw new Error('Erreur HTTP: ' + response.status);
             }
             return response.json();
         })
         .then(data => {
-            // Vérifier si c'est un tableau
-            if (Array.isArray(data)) {
-                colisData = data;
-                afficherTableauColis(data);
-            } else {
-                throw new Error('Format de données invalide');
-            }
+            console.log('Colis chargés:', data);
+            colisData = data;
+            afficherTableauColis(data);
+            showConnectionStatus(true);
         })
         .catch(error => {
-            console.error('Erreur lors du chargement des colis:', error);
-            showErrorTable('Erreur lors du chargement des données: ' + error.message);
+            console.error('Erreur lors du chargement:', error);
+            showErrorTable('Impossible de charger depuis Google Sheets. Mode local activé.');
+            showConnectionStatus(false);
             
-            // Pour le débogage, afficher les données simulées
-            setTimeout(() => {
-                simulerChargementColis();
-            }, 1000);
+            // Charger depuis le stockage local
+            chargerColisLocal();
         });
 }
 
@@ -114,17 +128,23 @@ function afficherTableauColis(data) {
     let html = '';
     
     data.forEach(colis => {
-        const dateEnregistrement = colis['Date Enregistrement'] || colis.dateEnregistrement || 'Non définie';
-        const dateSortie = colis['Date Sortie'] || colis.dateSortie || 'Non définie';
+        const id = colis.ID || colis.id || '-';
+        const proprietaire = colis.Propriétaire || colis.proprietaire || '-';
+        const description = colis.Description || colis.description || '-';
+        const codeBarre = colis['Code Barre'] || colis.codeBarre || '-';
+        const dateEnregistrement = colis['Date Enregistrement'] || colis.dateEnregistrement || '-';
+        const retire = colis.Retiré || colis.retire || 'Non';
         const personneRetrait = colis['Personne Retrait'] || colis.personneRetrait || '-';
-        const isRetire = (colis['Retiré'] || colis.retire) === 'Oui';
+        const dateSortie = colis['Date Sortie'] || colis.dateSortie || '-';
+        
+        const isRetire = retire === 'Oui';
         
         html += `
             <tr>
-                <td>${colis.ID || colis.id || '-'}</td>
-                <td>${colis.Propriétaire || colis.proprietaire}</td>
-                <td>${colis.Description || colis.description || '-'}</td>
-                <td><span class="badge bg-secondary">${colis['Code Barre'] || colis.codeBarre}</span></td>
+                <td>${id}</td>
+                <td>${proprietaire}</td>
+                <td>${description}</td>
+                <td><span class="badge bg-secondary">${codeBarre}</span></td>
                 <td>${dateEnregistrement}</td>
                 <td>
                     ${isRetire 
@@ -136,7 +156,7 @@ function afficherTableauColis(data) {
                 <td>${dateSortie}</td>
                 <td>
                     ${!isRetire 
-                        ? `<button class="btn btn-sm btn-warning" onclick="ouvrirModalRetirer('${colis.ID || colis.id}', '${colis.Propriétaire || colis.proprietaire}')">
+                        ? `<button class="btn btn-sm btn-warning" onclick="ouvrirModalRetirer('${id}', '${proprietaire.replace(/'/g, "\\'")}')">
                               <i class="fas fa-sign-out-alt me-1"></i>Sortir
                            </button>` 
                         : '<span class="text-muted">Déjà retiré</span>'
@@ -148,14 +168,14 @@ function afficherTableauColis(data) {
     
     tableBody.innerHTML = html;
     
-    // Initialiser DataTables si pas déjà fait
+    // Initialiser/rafraîchir DataTables
     if (!dataTableInstance) {
         dataTableInstance = $('#colisTable').DataTable({
             language: {
                 url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/fr-FR.json'
             },
             pageLength: 10,
-            order: [[4, 'desc']] // Trier par date d'enregistrement décroissante
+            order: [[4, 'desc']]
         });
     } else {
         dataTableInstance.destroy();
@@ -169,72 +189,89 @@ function afficherTableauColis(data) {
     }
 }
 
-// Enregistrer un nouveau colis
-// Enregistrer un nouveau colis - VERSION CORRIGÉE
+// ===========================
+// ENREGISTREMENT D'UN COLIS
+// ===========================
+
 function enregistrerColis(e) {
     e.preventDefault();
     
-    const proprietaire = document.getElementById('proprietaire').value;
-    const codeBarre = document.getElementById('codeBarre').value;
-    const description = document.getElementById('description').value;
+    // Récupérer les valeurs du formulaire
+    const proprietaire = document.getElementById('proprietaire').value.trim();
+    const codeBarre = document.getElementById('codeBarre').value.trim();
+    const description = document.getElementById('description').value.trim();
     
     // Validation
-    if (!proprietaire.trim() || !codeBarre.trim()) {
-        showAlert('Veuillez remplir tous les champs obligatoires', 'danger');
+    if (!proprietaire || !codeBarre) {
+        showAlert('⚠️ Veuillez remplir tous les champs obligatoires', 'warning');
         return;
     }
     
-    // Désactiver le bouton
-    const submitBtn = e.target.querySelector('button[type="submit"]');
+    // Désactiver le bouton pour éviter les doubles clics
+    const submitBtn = document.getElementById('btnSubmitEnregistrer');
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enregistrement...';
     submitBtn.disabled = true;
     
-    // IMPORTANT: URL pour contourner les problèmes CORS
-    // Utilisez l'URL EXACTE de votre déploiement Apps Script
-    const url = CONFIG.APPS_SCRIPT_URL;
-    console.log('Envoi vers:', url); // Pour déboguer
-    
-    // Préparer les données SIMPLES
-    const formData = {
+    // Préparer les données
+    const colisData = {
         action: 'create',
         proprietaire: proprietaire,
         codeBarre: codeBarre,
         description: description
     };
     
-    // Envoyer les données - VERSION SIMPLIFIÉE
-    fetch(url, {
+    console.log('Envoi des données:', colisData);
+    
+    // Envoyer à Google Sheets via Apps Script
+    fetch(CONFIG.APPS_SCRIPT_URL, {
         method: 'POST',
-        mode: 'no-cors', // Important pour contourner CORS
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(colisData)
     })
-    .then(() => {
-        // Avec mode='no-cors', on ne peut pas lire la réponse
-        // On suppose que ça a fonctionné
-        showAlert('✅ Colis enregistré avec succès!', 'success');
-        document.getElementById('formEnregistrer').reset();
+    .then(response => {
+        console.log('Réponse reçue, status:', response.status);
+        if (!response.ok) {
+            throw new Error('Erreur HTTP: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(result => {
+        console.log('Résultat:', result);
         
-        // Fermer le modal
-        const modalEl = document.getElementById('modalEnregistrer');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        if (modal) modal.hide();
-        
-        // Recharger après 1 seconde
-        setTimeout(() => {
-            chargerColis();
-        }, 1000);
+        if (result.success) {
+            // Succès
+            showAlert('✅ Colis enregistré avec succès! ID: ' + result.id, 'success');
+            
+            // Réinitialiser le formulaire
+            document.getElementById('formEnregistrer').reset();
+            
+            // Fermer le modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalEnregistrer'));
+            if (modal) modal.hide();
+            
+            // Recharger les données après un délai
+            setTimeout(() => {
+                chargerColis();
+            }, 1000);
+            
+        } else {
+            // Erreur du serveur
+            showAlert('❌ Erreur: ' + (result.error || 'Erreur inconnue'), 'danger');
+        }
     })
     .catch(error => {
-        console.error('Erreur:', error);
-        showAlert('⚠️ Enregistré localement (vérifiez la connexion)', 'warning');
+        console.error('Erreur d\'envoi:', error);
         
-        // Fermer quand même le modal
-        const modalEl = document.getElementById('modalEnregistrer');
-        const modal = bootstrap.Modal.getInstance(modalEl);
+        // Enregistrer localement en fallback
+        enregistrerColisLocal(proprietaire, codeBarre, description);
+        
+        showAlert('⚠️ Enregistré localement (problème de connexion)', 'warning');
+        
+        // Fermer le modal quand même
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalEnregistrer'));
         if (modal) modal.hide();
     })
     .finally(() => {
@@ -244,9 +281,12 @@ function enregistrerColis(e) {
     });
 }
 
-// Rechercher par propriétaire
+// ===========================
+// RECHERCHE DE COLIS
+// ===========================
+
 function rechercherParProprietaire() {
-    const searchTerm = document.getElementById('searchProprietaire').value.trim().toLowerCase();
+    const searchTerm = document.getElementById('searchProprietaire').value.trim();
     
     if (!searchTerm) {
         showAlert('Veuillez entrer un nom de propriétaire', 'warning');
@@ -254,28 +294,16 @@ function rechercherParProprietaire() {
     }
     
     fetch(CONFIG.APPS_SCRIPT_URL + '?action=searchByProprietaire&term=' + encodeURIComponent(searchTerm))
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Erreur réseau: ' + response.status);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            if (Array.isArray(data)) {
-                afficherResultatsProprietaire(data);
-            } else if (data.error) {
-                throw new Error(data.error);
-            } else {
-                afficherResultatsProprietaire([]);
-            }
+            afficherResultatsProprietaire(data);
         })
         .catch(error => {
-            console.error('Erreur lors de la recherche:', error);
-            showAlert('Erreur lors de la recherche: ' + error.message, 'danger');
+            console.error('Erreur recherche:', error);
+            rechercherParProprietaireLocal(searchTerm);
         });
 }
 
-// Afficher les résultats de recherche par propriétaire
 function afficherResultatsProprietaire(results) {
     const container = document.getElementById('resultsProprietaire');
     
@@ -322,7 +350,6 @@ function afficherResultatsProprietaire(results) {
     container.innerHTML = html;
 }
 
-// Rechercher par code barre
 function rechercherParCodeBarre() {
     const searchTerm = document.getElementById('searchBarcode').value.trim();
     
@@ -332,32 +359,20 @@ function rechercherParCodeBarre() {
     }
     
     fetch(CONFIG.APPS_SCRIPT_URL + '?action=searchByBarcode&term=' + encodeURIComponent(searchTerm))
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Erreur réseau: ' + response.status);
-            }
-            return response.json();
-        })
+        .then(response => response.json())
         .then(data => {
-            if (data && !data.error) {
-                afficherResultatCodeBarre(data);
-            } else if (data && data.error) {
-                throw new Error(data.error);
-            } else {
-                afficherResultatCodeBarre(null);
-            }
+            afficherResultatCodeBarre(data);
         })
         .catch(error => {
-            console.error('Erreur lors de la recherche:', error);
-            showAlert('Erreur lors de la recherche: ' + error.message, 'danger');
+            console.error('Erreur recherche:', error);
+            rechercherParCodeBarreLocal(searchTerm);
         });
 }
 
-// Afficher le résultat de recherche par code barre
 function afficherResultatCodeBarre(result) {
     const container = document.getElementById('resultsBarcode');
     
-    if (!result) {
+    if (!result || Object.keys(result).length === 0) {
         container.innerHTML = `
             <div class="alert alert-warning">
                 <i class="fas fa-exclamation-triangle me-2"></i>
@@ -427,7 +442,10 @@ function afficherResultatCodeBarre(result) {
     container.innerHTML = html;
 }
 
-// Ouvrir le modal pour marquer un colis comme retiré
+// ===========================
+// GESTION DES SORTIES
+// ===========================
+
 function ouvrirModalRetirer(colisId, proprietaire) {
     document.getElementById('colisIdRetirer').value = colisId;
     document.getElementById('modalRetirerLabel').innerHTML = `
@@ -438,7 +456,6 @@ function ouvrirModalRetirer(colisId, proprietaire) {
     modal.show();
 }
 
-// Marquer un colis comme retiré
 function marquerCommeRetire(e) {
     e.preventDefault();
     
@@ -450,8 +467,8 @@ function marquerCommeRetire(e) {
         return;
     }
     
-    // Désactiver le bouton pendant l'envoi
-    const submitBtn = e.target.querySelector('button[type="submit"]');
+    // Désactiver le bouton
+    const submitBtn = document.getElementById('btnSubmitRetirer');
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Mise à jour...';
     submitBtn.disabled = true;
@@ -465,16 +482,11 @@ function marquerCommeRetire(e) {
     fetch(CONFIG.APPS_SCRIPT_URL, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify(data)
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Erreur réseau: ' + response.status);
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(result => {
         if (result.success) {
             showAlert('✅ Colis marqué comme retiré avec succès!', 'success');
@@ -505,7 +517,12 @@ function marquerCommeRetire(e) {
     })
     .catch(error => {
         console.error('Erreur:', error);
-        showAlert('❌ Erreur de connexion au serveur', 'danger');
+        showAlert('⚠️ Mise à jour locale (problème de connexion)', 'warning');
+        marquerCommeRetireLocal(colisId, personneRetrait);
+        
+        // Fermer le modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalRetirer'));
+        if (modal) modal.hide();
     })
     .finally(() => {
         // Réactiver le bouton
@@ -514,13 +531,16 @@ function marquerCommeRetire(e) {
     });
 }
 
-// Fonctions utilitaires
+// ===========================
+// FONCTIONS UTILITAIRES
+// ===========================
+
 function showAlert(message, type) {
     // Supprimer les alertes existantes
-    document.querySelectorAll('.alert-position-fixed').forEach(alert => alert.remove());
+    document.querySelectorAll('.alert-fixed').forEach(alert => alert.remove());
     
     const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-position-fixed`;
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-fixed`;
     alertDiv.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 1050; min-width: 300px; max-width: 500px;';
     alertDiv.innerHTML = `
         ${message}
@@ -531,72 +551,4 @@ function showAlert(message, type) {
     
     setTimeout(() => {
         if (alertDiv.parentNode) {
-            alertDiv.remove();
-        }
-    }, 5000);
-}
-
-function showLoadingTable() {
-    const tableBody = document.getElementById('colisTableBody');
-    tableBody.innerHTML = `
-        <tr>
-            <td colspan="9" class="text-center">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Chargement...</span>
-                </div>
-                <p class="mt-2">Chargement des données...</p>
-            </td>
-        </tr>
-    `;
-}
-
-function showErrorTable(message) {
-    const tableBody = document.getElementById('colisTableBody');
-    tableBody.innerHTML = `
-        <tr>
-            <td colspan="9" class="text-center">
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    ${message}
-                    <br>
-                    <small>Affichage des données simulées pour le développement</small>
-                </div>
-            </td>
-        </tr>
-    `;
-}
-
-// Simulation de données pour le développement
-function simulerChargementColis() {
-    // Données simulées pour le développement
-    const simulatedData = [
-        {
-            ID: 'COLIS-001',
-            Propriétaire: 'Jean Dupont',
-            Description: 'Livre sur la programmation',
-            'Code Barre': '9782212676092',
-            'Date Enregistrement': '15/05/2023',
-            Retiré: 'Non',
-            'Personne Retrait': '',
-            'Date Sortie': ''
-        },
-        {
-            ID: 'COLIS-002',
-            Propriétaire: 'Marie Martin',
-            Description: 'Téléphone portable',
-            'Code Barre': '8801642578013',
-            'Date Enregistrement': '16/05/2023',
-            Retiré: 'Oui',
-            'Personne Retrait': 'Marie Martin',
-            'Date Sortie': '18/05/2023'
-        }
-    ];
-    
-    colisData = simulatedData;
-    setTimeout(() => {
-        afficherTableauColis(colisData);
-    }, 500);
-
-}
-
-
+           
