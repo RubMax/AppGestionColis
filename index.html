@@ -24,24 +24,8 @@
             <a class="navbar-brand" href="#">
                 <i class="fas fa-boxes me-2"></i>Gestion de Colis Pro
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link active" href="#accueil">Accueil</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#enregistrer">Enregistrer</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#rechercher">Rechercher</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#colis">Liste des Colis</a>
-                    </li>
-                </ul>
+            <div class="navbar-text text-light ms-auto d-none d-lg-block" id="connectionStatus">
+                <i class="fas fa-circle text-success"></i> Connecté
             </div>
         </div>
     </nav>
@@ -77,8 +61,11 @@
             <div class="row">
                 <div class="col-lg-12">
                     <div class="card shadow">
-                        <div class="card-header bg-primary text-white">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                             <h2 class="h4 mb-0"><i class="fas fa-plus-circle me-2"></i>Enregistrement de colis</h2>
+                            <button class="btn btn-light btn-sm" onclick="chargerColis()">
+                                <i class="fas fa-sync-alt me-1"></i>Actualiser
+                            </button>
                         </div>
                         <div class="card-body">
                             <div class="text-center">
@@ -126,7 +113,7 @@
                                                 <label for="searchProprietaire" class="form-label">Nom du propriétaire</label>
                                                 <div class="input-group">
                                                     <input type="text" class="form-control" id="searchProprietaire" placeholder="Entrez le nom du propriétaire">
-                                                    <button class="btn btn-primary" type="button" id="btnSearchProprietaire">
+                                                    <button class="btn btn-primary" type="button" onclick="rechercherParProprietaire()">
                                                         <i class="fas fa-search me-1"></i>Rechercher
                                                     </button>
                                                 </div>
@@ -151,7 +138,7 @@
                                                 <label for="searchBarcode" class="form-label">Code barre</label>
                                                 <div class="input-group">
                                                     <input type="text" class="form-control" id="searchBarcode" placeholder="Entrez le code barre">
-                                                    <button class="btn btn-primary" type="button" id="btnSearchBarcode">
+                                                    <button class="btn btn-primary" type="button" onclick="rechercherParCodeBarre()">
                                                         <i class="fas fa-search me-1"></i>Rechercher
                                                     </button>
                                                 </div>
@@ -181,7 +168,7 @@
                     <div class="card shadow">
                         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                             <h2 class="h4 mb-0"><i class="fas fa-list me-2"></i>Colis enregistrés</h2>
-                            <button class="btn btn-light btn-sm" id="refreshTable">
+                            <button class="btn btn-light btn-sm" onclick="chargerColis()">
                                 <i class="fas fa-sync-alt me-1"></i>Actualiser
                             </button>
                         </div>
@@ -202,7 +189,6 @@
                                         </tr>
                                     </thead>
                                     <tbody id="colisTableBody">
-                                        <!-- Les données seront chargées dynamiquement -->
                                         <tr>
                                             <td colspan="9" class="text-center">
                                                 <div class="spinner-border text-primary" role="status">
@@ -231,7 +217,7 @@
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="formEnregistrer">
+                <form id="formEnregistrer" onsubmit="enregistrerColis(event)">
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6">
@@ -260,7 +246,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" id="btnSubmitEnregistrer">
                             <i class="fas fa-save me-2"></i>Enregistrer le colis
                         </button>
                     </div>
@@ -279,7 +265,7 @@
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="formRetirer">
+                <form id="formRetirer" onsubmit="marquerCommeRetire(event)">
                     <div class="modal-body">
                         <input type="hidden" id="colisIdRetirer">
                         <div class="mb-3">
@@ -293,7 +279,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-warning">
+                        <button type="submit" class="btn btn-warning" id="btnSubmitRetirer">
                             <i class="fas fa-check-circle me-2"></i>Confirmer le retrait
                         </button>
                     </div>
