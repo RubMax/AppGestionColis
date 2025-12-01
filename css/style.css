@@ -3,6 +3,7 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f8f9fa;
+    padding-bottom: 20px;
 }
 
 /* Amélioration des cartes */
@@ -10,6 +11,7 @@ body {
     border-radius: 10px;
     border: none;
     transition: transform 0.2s;
+    margin-bottom: 20px;
 }
 
 .card:hover {
@@ -18,105 +20,90 @@ body {
 
 .card-header {
     border-radius: 10px 10px 0 0 !important;
+    padding: 1rem 1.5rem;
 }
 
 /* Style pour les tableaux */
 .table {
     border-radius: 8px;
     overflow: hidden;
+    margin-bottom: 0;
 }
 
 .table thead th {
     background-color: #e9ecef;
     border-bottom: 2px solid #dee2e6;
+    padding: 1rem;
+    font-weight: 600;
 }
 
 .table-hover tbody tr:hover {
     background-color: rgba(13, 110, 253, 0.05);
 }
 
+.table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
 /* Boutons personnalisés */
 .btn-primary {
     background-color: #0d6efd;
     border-color: #0d6efd;
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
 }
 
 .btn-primary:hover {
     background-color: #0b5ed7;
     border-color: #0a58ca;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #000;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+    border-color: #d39e00;
+    color: #000;
 }
 
 /* Onglets personnalisés */
+.nav-tabs {
+    border-bottom: 2px solid #dee2e6;
+    margin-bottom: 1rem;
+}
+
 .nav-tabs .nav-link {
     color: #495057;
-    border: 1px solid transparent;
+    border: 2px solid transparent;
     border-top-left-radius: 0.5rem;
     border-top-right-radius: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.nav-tabs .nav-link:hover {
+    border-color: #e9ecef #e9ecef #dee2e6;
+    color: #0d6efd;
 }
 
 .nav-tabs .nav-link.active {
     color: #0d6efd;
     background-color: #fff;
     border-color: #dee2e6 #dee2e6 #fff;
-    font-weight: 500;
+    font-weight: 600;
+    border-bottom: 2px solid #0d6efd;
 }
 
-/* Animation pour les éléments de chargement */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.fade-in {
-    animation: fadeIn 0.5s ease-in-out;
-}
-
-/* Badges personnalisés */
-.badge-retired {
-    background-color: #198754;
-    color: white;
-}
-
-.badge-not-retired {
-    background-color: #6c757d;
-    color: white;
-}
-
-/* Espacement pour les sections */
-section {
-    padding-top: 20px;
-    padding-bottom: 20px;
-}
-
-/* Style pour le footer */
-footer {
-    margin-top: auto;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .display-5 {
-        font-size: 2rem;
-    }
-    
-    .btn-lg {
-        padding: 0.5rem 1rem;
-        font-size: 1rem;
-    }
-}
-
-/* Style pour les résultats de recherche */
-.search-result-card {
-    border-left: 4px solid #0d6efd;
-    transition: all 0.3s;
-}
-
-.search-result-card:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-/* Ajoutez à la fin de votre fichier css/style.css */
-
-.alert-position-fixed {
+/* Alertes fixes */
+.alert-fixed {
     position: fixed;
     top: 80px;
     right: 20px;
@@ -125,6 +112,7 @@ footer {
     max-width: 500px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     animation: slideInRight 0.3s ease-out;
+    border-radius: 8px;
 }
 
 @keyframes slideInRight {
@@ -138,15 +126,95 @@ footer {
     }
 }
 
-/* Pour le débogage */
-.debug-info {
-    position: fixed;
-    bottom: 10px;
-    left: 10px;
-    background: rgba(0,0,0,0.7);
-    color: white;
-    padding: 5px 10px;
+/* Badges */
+.badge {
+    padding: 0.35em 0.65em;
+    font-weight: 500;
     border-radius: 4px;
-    font-size: 12px;
-    z-index: 9999;
+}
+
+/* Cards de résultats */
+.search-result-card {
+    border-left: 4px solid #0d6efd;
+    transition: all 0.3s;
+    height: 100%;
+}
+
+.search-result-card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+/* Formulaires */
+.form-control, .form-select {
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ced4da;
+    transition: all 0.3s;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+/* Modals */
+.modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    border-radius: 12px 12px 0 0;
+    padding: 1.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid #dee2e6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .display-5 {
+        font-size: 2rem;
+    }
+    
+    .btn-lg {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .alert-fixed {
+        left: 10px;
+        right: 10px;
+        max-width: none;
+    }
+}
+
+/* Animation de chargement */
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Status de connexion */
+.navbar-text small {
+    font-size: 0.7rem;
+    opacity: 0.8;
 }
