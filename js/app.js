@@ -1,7 +1,7 @@
 // Configuration de l'application
 const CONFIG = {
     // REMPLACEZ CETTE URL PAR VOTRE URL APPS SCRIPT
-    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwfzpw-4DYB_ZfrR3ULBcbH1Yk8k6QNhONeFbFR5CXtIJL39cwlVa1wskYHwscMN_uHFw/exec' // Votre URL ici
+    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycby9zmfSadvog9NXvQuC-IYA2CeO88Wra3FPpUYg62gq7T_yKj28a-uUVeSpsnlrwuxnbA/exec' // Votre URL ici
 };
 
 // Variables globales
@@ -593,3 +593,4 @@ function simulerChargementColis() {
     }, 500);
 
 }
+
