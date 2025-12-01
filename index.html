@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion de Colis - Application Professionnelle</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Feuille de style personnalisée -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <!-- DataTables pour un tableau avancé -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+</head>
+<body>
+    <!-- Barre de navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-boxes me-2"></i>Gestion de Colis Pro
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#accueil">Accueil</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#enregistrer">Enregistrer</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#rechercher">Rechercher</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#colis">Liste des Colis</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Section principale -->
+    <main class="container my-4">
+        <!-- Section d'en-tête -->
+        <section id="accueil" class="mb-5">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card shadow">
+                        <div class="card-body text-center py-5">
+                            <h1 class="display-5 fw-bold text-primary mb-3">
+                                <i class="fas fa-box-open me-2"></i>Application de Gestion de Colis
+                            </h1>
+                            <p class="lead">Gérez efficacement l'enregistrement, le suivi et la sortie des colis</p>
+                            <div class="mt-4">
+                                <button class="btn btn-primary btn-lg me-3" data-bs-toggle="modal" data-bs-target="#modalEnregistrer">
+                                    <i class="fas fa-plus-circle me-2"></i>Enregistrer un nouveau colis
+                                </button>
+                                <a href="#rechercher" class="btn btn-outline-primary btn-lg">
+                                    <i class="fas fa-search me-2"></i>Rechercher un colis
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section d'enregistrement -->
+        <section id="enregistrer" class="mb-5">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h2 class="h4 mb-0"><i class="fas fa-plus-circle me-2"></i>Enregistrement de colis</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalEnregistrer">
+                                    <i class="fas fa-box me-2"></i>Enregistrer un nouveau colis
+                                </button>
+                                <p class="text-muted mt-2">Cliquez sur le bouton pour ouvrir le formulaire d'enregistrement</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section de recherche -->
+        <section id="rechercher" class="mb-5">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h2 class="h4 mb-0"><i class="fas fa-search me-2"></i>Recherche de colis</h2>
+                        </div>
+                        <div class="card-body">
+                            <!-- Onglets de recherche -->
+                            <ul class="nav nav-tabs" id="rechercheTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="proprietaire-tab" data-bs-toggle="tab" data-bs-target="#proprietaire" type="button">
+                                        Par nom du propriétaire
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="barcode-tab" data-bs-toggle="tab" data-bs-target="#barcode" type="button">
+                                        Par code barre
+                                    </button>
+                                </li>
+                            </ul>
+                            
+                            <!-- Contenu des onglets -->
+                            <div class="tab-content p-3 border border-top-0 rounded-bottom" id="rechercheTabsContent">
+                                <!-- Recherche par propriétaire -->
+                                <div class="tab-pane fade show active" id="proprietaire" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="mb-3">
+                                                <label for="searchProprietaire" class="form-label">Nom du propriétaire</label>
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" id="searchProprietaire" placeholder="Entrez le nom du propriétaire">
+                                                    <button class="btn btn-primary" type="button" id="btnSearchProprietaire">
+                                                        <i class="fas fa-search me-1"></i>Rechercher
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Résultats recherche par propriétaire -->
+                                    <div id="resultsProprietaire">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Les résultats de recherche par propriétaire apparaîtront ici.
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Recherche par code barre -->
+                                <div class="tab-pane fade" id="barcode" role="tabpanel">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="mb-3">
+                                                <label for="searchBarcode" class="form-label">Code barre</label>
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" id="searchBarcode" placeholder="Entrez le code barre">
+                                                    <button class="btn btn-primary" type="button" id="btnSearchBarcode">
+                                                        <i class="fas fa-search me-1"></i>Rechercher
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Résultats recherche par code barre -->
+                                    <div id="resultsBarcode">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            Les résultats de recherche par code barre apparaîtront ici.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section liste des colis -->
+        <section id="colis" class="mb-5">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <h2 class="h4 mb-0"><i class="fas fa-list me-2"></i>Colis enregistrés</h2>
+                            <button class="btn btn-light btn-sm" id="refreshTable">
+                                <i class="fas fa-sync-alt me-1"></i>Actualiser
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table id="colisTable" class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Propriétaire</th>
+                                            <th>Description</th>
+                                            <th>Code Barre</th>
+                                            <th>Date Enregistrement</th>
+                                            <th>Retiré</th>
+                                            <th>Personne Retrait</th>
+                                            <th>Date Sortie</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="colisTableBody">
+                                        <!-- Les données seront chargées dynamiquement -->
+                                        <tr>
+                                            <td colspan="9" class="text-center">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Chargement...</span>
+                                                </div>
+                                                <p class="mt-2">Chargement des données...</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal pour enregistrer un colis -->
+    <div class="modal fade" id="modalEnregistrer" tabindex="-1" aria-labelledby="modalEnregistrerLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalEnregistrerLabel">
+                        <i class="fas fa-plus-circle me-2"></i>Enregistrer un nouveau colis
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="formEnregistrer">
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="proprietaire" class="form-label">Nom du propriétaire *</label>
+                                    <input type="text" class="form-control" id="proprietaire" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="codeBarre" class="form-label">Code barre *</label>
+                                    <input type="text" class="form-control" id="codeBarre" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description du colis</label>
+                            <textarea class="form-control" id="description" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            La date d'enregistrement sera ajoutée automatiquement. Le statut "Retiré" sera défini sur "Non" par défaut.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Enregistrer le colis
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour marquer un colis comme retiré -->
+    <div class="modal fade" id="modalRetirer" tabindex="-1" aria-labelledby="modalRetirerLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title" id="modalRetirerLabel">
+                        <i class="fas fa-sign-out-alt me-2"></i>Marquer le colis comme retiré
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="formRetirer">
+                    <div class="modal-body">
+                        <input type="hidden" id="colisIdRetirer">
+                        <div class="mb-3">
+                            <label for="personneRetrait" class="form-label">Nom de la personne qui retire le colis *</label>
+                            <input type="text" class="form-control" id="personneRetrait" required>
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Cette action marquera le colis comme "Retiré" et ajoutera la date de sortie automatiquement. Cette action ne peut pas être annulée.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-check-circle me-2"></i>Confirmer le retrait
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-boxes me-2"></i>Gestion de Colis Pro</h5>
+                    <p class="mb-0">Application professionnelle de gestion de colis connectée à Google Sheets</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">Données hébergées sur Google Sheets via Apps Script</p>
+                    <p class="mb-0">Interface développée avec Bootstrap 5</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <!-- Bootstrap Bundle avec Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- jQuery (nécessaire pour DataTables) -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    
+    <!-- DataTables -->
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    
+    <!-- Application principale -->
+    <script src="js/app.js"></script>
+</body>
+</html>
