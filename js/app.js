@@ -1,7 +1,7 @@
 // Configuration de l'application
 const CONFIG = {
-    // URL de votre script Apps Script (à remplacer par votre URL)
-    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwfzpw-4DYB_ZfrR3ULBcbH1Yk8k6QNhONeFbFR5CXtIJL39cwlVa1wskYHwscMN_uHFw/exec'
+    // REMPLACEZ CETTE URL PAR VOTRE URL APPS SCRIPT
+    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycby.../exec' // Votre URL ici
 };
 
 // Variables globales
@@ -35,6 +35,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialiser l'application
 function initApp() {
+    // Vérifier la configuration
+    if (CONFIG.APPS_SCRIPT_URL.includes('AKfycby...')) {
+        showAlert('⚠️ Configurez d\'abord l\'URL Apps Script dans CONFIG.APPS_SCRIPT_URL', 'warning');
+    }
+    
     chargerColis();
     configurerNavigation();
 }
@@ -62,30 +67,38 @@ function configurerNavigation() {
 function chargerColis() {
     showLoadingTable();
     
-    // Pour le développement, utiliser des données simulées
-    // En production, remplacer par un appel à Apps Script
-    simulerChargementColis();
-    
-    // En production, décommenter ceci:
-    /*
     fetch(CONFIG.APPS_SCRIPT_URL + '?action=getAll')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau: ' + response.status);
+            }
+            return response.json();
+        })
         .then(data => {
-            colisData = data;
-            afficherTableauColis(data);
+            // Vérifier si c'est un tableau
+            if (Array.isArray(data)) {
+                colisData = data;
+                afficherTableauColis(data);
+            } else {
+                throw new Error('Format de données invalide');
+            }
         })
         .catch(error => {
             console.error('Erreur lors du chargement des colis:', error);
-            showErrorTable('Erreur lors du chargement des données');
+            showErrorTable('Erreur lors du chargement des données: ' + error.message);
+            
+            // Pour le débogage, afficher les données simulées
+            setTimeout(() => {
+                simulerChargementColis();
+            }, 1000);
         });
-    */
 }
 
 // Afficher les colis dans le tableau
 function afficherTableauColis(data) {
     const tableBody = document.getElementById('colisTableBody');
     
-    if (data.length === 0) {
+    if (!data || data.length === 0) {
         tableBody.innerHTML = `
             <tr>
                 <td colspan="9" class="text-center">
@@ -101,17 +114,17 @@ function afficherTableauColis(data) {
     let html = '';
     
     data.forEach(colis => {
-        const dateEnregistrement = colis.dateEnregistrement || 'Non définie';
-        const dateSortie = colis.dateSortie || 'Non définie';
-        const personneRetrait = colis.personneRetrait || '-';
-        const isRetire = colis.retire === 'Oui';
+        const dateEnregistrement = colis['Date Enregistrement'] || colis.dateEnregistrement || 'Non définie';
+        const dateSortie = colis['Date Sortie'] || colis.dateSortie || 'Non définie';
+        const personneRetrait = colis['Personne Retrait'] || colis.personneRetrait || '-';
+        const isRetire = (colis['Retiré'] || colis.retire) === 'Oui';
         
         html += `
             <tr>
-                <td>${colis.id || '-'}</td>
-                <td>${colis.proprietaire}</td>
-                <td>${colis.description || '-'}</td>
-                <td><span class="badge bg-secondary">${colis.codeBarre}</span></td>
+                <td>${colis.ID || colis.id || '-'}</td>
+                <td>${colis.Propriétaire || colis.proprietaire}</td>
+                <td>${colis.Description || colis.description || '-'}</td>
+                <td><span class="badge bg-secondary">${colis['Code Barre'] || colis.codeBarre}</span></td>
                 <td>${dateEnregistrement}</td>
                 <td>
                     ${isRetire 
@@ -123,7 +136,7 @@ function afficherTableauColis(data) {
                 <td>${dateSortie}</td>
                 <td>
                     ${!isRetire 
-                        ? `<button class="btn btn-sm btn-warning" onclick="ouvrirModalRetirer('${colis.id}', '${colis.proprietaire}')">
+                        ? `<button class="btn btn-sm btn-warning" onclick="ouvrirModalRetirer('${colis.ID || colis.id}', '${colis.Propriétaire || colis.proprietaire}')">
                               <i class="fas fa-sign-out-alt me-1"></i>Sortir
                            </button>` 
                         : '<span class="text-muted">Déjà retiré</span>'
@@ -170,24 +183,13 @@ function enregistrerColis(e) {
         return;
     }
     
-    // Simuler l'enregistrement
-    const newColis = {
-        id: generateId(),
-        proprietaire: proprietaire,
-        codeBarre: codeBarre,
-        description: description,
-        dateEnregistrement: new Date().toLocaleDateString('fr-FR'),
-        retire: 'Non',
-        personneRetrait: '',
-        dateSortie: ''
-    };
+    // Désactiver le bouton pendant l'envoi
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Enregistrement...';
+    submitBtn.disabled = true;
     
-    // Pour le développement, ajouter aux données locales
-    colisData.unshift(newColis);
-    afficherTableauColis(colisData);
-    
-    // En production, décommenter ceci:
-    /*
+    // Préparer les données pour l'envoi
     const data = {
         action: 'create',
         proprietaire: proprietaire,
@@ -195,30 +197,46 @@ function enregistrerColis(e) {
         description: description
     };
     
+    // Envoyer à Apps Script
     fetch(CONFIG.APPS_SCRIPT_URL, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erreur réseau: ' + response.status);
+        }
+        return response.json();
+    })
     .then(result => {
         if (result.success) {
-            showAlert('Colis enregistré avec succès!', 'success');
+            showAlert('✅ Colis enregistré avec succès! ID: ' + result.id, 'success');
             document.getElementById('formEnregistrer').reset();
-            bootstrap.Modal.getInstance(document.getElementById('modalEnregistrer')).hide();
-            chargerColis();
+            
+            // Fermer le modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalEnregistrer'));
+            if (modal) modal.hide();
+            
+            // Recharger les données
+            setTimeout(() => {
+                chargerColis();
+            }, 1000);
         } else {
-            showAlert('Erreur lors de l\'enregistrement: ' + result.error, 'danger');
+            showAlert('❌ Erreur: ' + (result.error || 'Erreur inconnue'), 'danger');
         }
     })
     .catch(error => {
         console.error('Erreur:', error);
-        showAlert('Erreur lors de l\'enregistrement', 'danger');
+        showAlert('❌ Erreur de connexion au serveur', 'danger');
+    })
+    .finally(() => {
+        // Réactiver le bouton
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
     });
-    */
-    
-    showAlert('Colis enregistré avec succès!', 'success');
-    document.getElementById('formEnregistrer').reset();
-    bootstrap.Modal.getInstance(document.getElementById('modalEnregistrer')).hide();
 }
 
 // Rechercher par propriétaire
@@ -230,33 +248,33 @@ function rechercherParProprietaire() {
         return;
     }
     
-    // Pour le développement, filtrer les données locales
-    const results = colisData.filter(colis => 
-        colis.proprietaire.toLowerCase().includes(searchTerm) && 
-        colis.retire === 'Non'
-    ).slice(0, 10); // Limiter à 10 résultats
-    
-    afficherResultatsProprietaire(results);
-    
-    // En production, décommenter ceci:
-    /*
     fetch(CONFIG.APPS_SCRIPT_URL + '?action=searchByProprietaire&term=' + encodeURIComponent(searchTerm))
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau: ' + response.status);
+            }
+            return response.json();
+        })
         .then(data => {
-            afficherResultatsProprietaire(data);
+            if (Array.isArray(data)) {
+                afficherResultatsProprietaire(data);
+            } else if (data.error) {
+                throw new Error(data.error);
+            } else {
+                afficherResultatsProprietaire([]);
+            }
         })
         .catch(error => {
             console.error('Erreur lors de la recherche:', error);
-            showAlert('Erreur lors de la recherche', 'danger');
+            showAlert('Erreur lors de la recherche: ' + error.message, 'danger');
         });
-    */
 }
 
 // Afficher les résultats de recherche par propriétaire
 function afficherResultatsProprietaire(results) {
     const container = document.getElementById('resultsProprietaire');
     
-    if (results.length === 0) {
+    if (!results || results.length === 0) {
         container.innerHTML = `
             <div class="alert alert-warning">
                 <i class="fas fa-exclamation-triangle me-2"></i>
@@ -275,15 +293,18 @@ function afficherResultatsProprietaire(results) {
     `;
     
     results.forEach(colis => {
+        const colisId = colis.ID || colis.id;
+        const proprietaire = colis.Propriétaire || colis.proprietaire;
+        
         html += `
             <div class="col-md-6 mb-3">
                 <div class="card search-result-card h-100">
                     <div class="card-body">
-                        <h5 class="card-title">${colis.proprietaire}</h5>
-                        <p class="card-text"><strong>Description:</strong> ${colis.description || 'Non spécifiée'}</p>
-                        <p class="card-text"><strong>Code barre:</strong> <span class="badge bg-secondary">${colis.codeBarre}</span></p>
-                        <p class="card-text"><strong>Date enregistrement:</strong> ${colis.dateEnregistrement || 'Non définie'}</p>
-                        <button class="btn btn-sm btn-warning" onclick="ouvrirModalRetirer('${colis.id}', '${colis.proprietaire}')">
+                        <h5 class="card-title">${proprietaire}</h5>
+                        <p class="card-text"><strong>Description:</strong> ${colis.Description || colis.description || 'Non spécifiée'}</p>
+                        <p class="card-text"><strong>Code barre:</strong> <span class="badge bg-secondary">${colis['Code Barre'] || colis.codeBarre}</span></p>
+                        <p class="card-text"><strong>Date enregistrement:</strong> ${colis['Date Enregistrement'] || colis.dateEnregistrement || 'Non définie'}</p>
+                        <button class="btn btn-sm btn-warning" onclick="ouvrirModalRetirer('${colisId}', '${proprietaire.replace(/'/g, "\\'")}')">
                             <i class="fas fa-sign-out-alt me-1"></i>Marquer comme retiré
                         </button>
                     </div>
@@ -305,27 +326,26 @@ function rechercherParCodeBarre() {
         return;
     }
     
-    // Pour le développement, filtrer les données locales
-    const result = colisData.find(colis => colis.codeBarre === searchTerm);
-    
-    if (result) {
-        afficherResultatCodeBarre(result);
-    } else {
-        afficherResultatCodeBarre(null);
-    }
-    
-    // En production, décommenter ceci:
-    /*
     fetch(CONFIG.APPS_SCRIPT_URL + '?action=searchByBarcode&term=' + encodeURIComponent(searchTerm))
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau: ' + response.status);
+            }
+            return response.json();
+        })
         .then(data => {
-            afficherResultatCodeBarre(data);
+            if (data && !data.error) {
+                afficherResultatCodeBarre(data);
+            } else if (data && data.error) {
+                throw new Error(data.error);
+            } else {
+                afficherResultatCodeBarre(null);
+            }
         })
         .catch(error => {
             console.error('Erreur lors de la recherche:', error);
-            showAlert('Erreur lors de la recherche', 'danger');
+            showAlert('Erreur lors de la recherche: ' + error.message, 'danger');
         });
-    */
 }
 
 // Afficher le résultat de recherche par code barre
@@ -342,7 +362,7 @@ function afficherResultatCodeBarre(result) {
         return;
     }
     
-    const isRetire = result.retire === 'Oui';
+    const isRetire = (result['Retiré'] || result.retire) === 'Oui';
     
     const html = `
         <div class="card">
@@ -353,19 +373,19 @@ function afficherResultatCodeBarre(result) {
                 <table class="table table-bordered">
                     <tr>
                         <th style="width: 30%">Propriétaire</th>
-                        <td>${result.proprietaire}</td>
+                        <td>${result.Propriétaire || result.proprietaire}</td>
                     </tr>
                     <tr>
                         <th>Description</th>
-                        <td>${result.description || 'Non spécifiée'}</td>
+                        <td>${result.Description || result.description || 'Non spécifiée'}</td>
                     </tr>
                     <tr>
                         <th>Code barre</th>
-                        <td><span class="badge bg-secondary">${result.codeBarre}</span></td>
+                        <td><span class="badge bg-secondary">${result['Code Barre'] || result.codeBarre}</span></td>
                     </tr>
                     <tr>
                         <th>Date enregistrement</th>
-                        <td>${result.dateEnregistrement || 'Non définie'}</td>
+                        <td>${result['Date Enregistrement'] || result.dateEnregistrement || 'Non définie'}</td>
                     </tr>
                     <tr>
                         <th>Statut</th>
@@ -379,18 +399,18 @@ function afficherResultatCodeBarre(result) {
                     ${isRetire ? `
                     <tr>
                         <th>Personne ayant retiré</th>
-                        <td>${result.personneRetrait || 'Non spécifiée'}</td>
+                        <td>${result['Personne Retrait'] || result.personneRetrait || 'Non spécifiée'}</td>
                     </tr>
                     <tr>
                         <th>Date de sortie</th>
-                        <td>${result.dateSortie || 'Non définie'}</td>
+                        <td>${result['Date Sortie'] || result.dateSortie || 'Non définie'}</td>
                     </tr>
                     ` : ''}
                 </table>
                 
                 ${!isRetire ? `
                 <div class="text-center mt-3">
-                    <button class="btn btn-warning" onclick="ouvrirModalRetirer('${result.id}', '${result.proprietaire}')">
+                    <button class="btn btn-warning" onclick="ouvrirModalRetirer('${result.ID || result.id}', '${(result.Propriétaire || result.proprietaire).replace(/'/g, "\\'")}')">
                         <i class="fas fa-sign-out-alt me-1"></i>Marquer comme retiré
                     </button>
                 </div>
@@ -425,29 +445,12 @@ function marquerCommeRetire(e) {
         return;
     }
     
-    // Pour le développement, mettre à jour les données locales
-    const colisIndex = colisData.findIndex(colis => colis.id === colisId);
-    if (colisIndex !== -1) {
-        colisData[colisIndex].retire = 'Oui';
-        colisData[colisIndex].personneRetrait = personneRetrait;
-        colisData[colisIndex].dateSortie = new Date().toLocaleDateString('fr-FR');
-        
-        afficherTableauColis(colisData);
-        
-        // Mettre à jour les résultats de recherche si nécessaire
-        const searchTermProprietaire = document.getElementById('searchProprietaire').value.trim();
-        if (searchTermProprietaire) {
-            rechercherParProprietaire();
-        }
-        
-        const searchTermBarcode = document.getElementById('searchBarcode').value.trim();
-        if (searchTermBarcode) {
-            rechercherParCodeBarre();
-        }
-    }
+    // Désactiver le bouton pendant l'envoi
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Mise à jour...';
+    submitBtn.disabled = true;
     
-    // En production, décommenter ceci:
-    /*
     const data = {
         action: 'markAsRetired',
         id: colisId,
@@ -456,46 +459,64 @@ function marquerCommeRetire(e) {
     
     fetch(CONFIG.APPS_SCRIPT_URL, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
         body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erreur réseau: ' + response.status);
+        }
+        return response.json();
+    })
     .then(result => {
         if (result.success) {
-            showAlert('Colis marqué comme retiré avec succès!', 'success');
+            showAlert('✅ Colis marqué comme retiré avec succès!', 'success');
             document.getElementById('formRetirer').reset();
-            bootstrap.Modal.getInstance(document.getElementById('modalRetirer')).hide();
-            chargerColis();
             
-            // Recharger les résultats de recherche si nécessaire
-            const searchTermProprietaire = document.getElementById('searchProprietaire').value.trim();
-            if (searchTermProprietaire) {
-                rechercherParProprietaire();
-            }
+            // Fermer le modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalRetirer'));
+            if (modal) modal.hide();
             
-            const searchTermBarcode = document.getElementById('searchBarcode').value.trim();
-            if (searchTermBarcode) {
-                rechercherParCodeBarre();
-            }
+            // Recharger les données
+            setTimeout(() => {
+                chargerColis();
+                
+                // Recharger les résultats de recherche si nécessaire
+                const searchTermProprietaire = document.getElementById('searchProprietaire').value.trim();
+                if (searchTermProprietaire) {
+                    rechercherParProprietaire();
+                }
+                
+                const searchTermBarcode = document.getElementById('searchBarcode').value.trim();
+                if (searchTermBarcode) {
+                    rechercherParCodeBarre();
+                }
+            }, 1000);
         } else {
-            showAlert('Erreur: ' + result.error, 'danger');
+            showAlert('❌ Erreur: ' + (result.error || 'Erreur inconnue'), 'danger');
         }
     })
     .catch(error => {
         console.error('Erreur:', error);
-        showAlert('Erreur lors de la mise à jour', 'danger');
+        showAlert('❌ Erreur de connexion au serveur', 'danger');
+    })
+    .finally(() => {
+        // Réactiver le bouton
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
     });
-    */
-    
-    showAlert('Colis marqué comme retiré avec succès!', 'success');
-    document.getElementById('formRetirer').reset();
-    bootstrap.Modal.getInstance(document.getElementById('modalRetirer')).hide();
 }
 
 // Fonctions utilitaires
 function showAlert(message, type) {
+    // Supprimer les alertes existantes
+    document.querySelectorAll('.alert-position-fixed').forEach(alert => alert.remove());
+    
     const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 1050; min-width: 300px;';
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-position-fixed`;
+    alertDiv.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 1050; min-width: 300px; max-width: 500px;';
     alertDiv.innerHTML = `
         ${message}
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -504,7 +525,9 @@ function showAlert(message, type) {
     document.body.appendChild(alertDiv);
     
     setTimeout(() => {
-        alertDiv.remove();
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
     }, 5000);
 }
 
@@ -530,14 +553,12 @@ function showErrorTable(message) {
                 <div class="alert alert-danger">
                     <i class="fas fa-exclamation-triangle me-2"></i>
                     ${message}
+                    <br>
+                    <small>Affichage des données simulées pour le développement</small>
                 </div>
             </td>
         </tr>
     `;
-}
-
-function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
 // Simulation de données pour le développement
@@ -545,109 +566,29 @@ function simulerChargementColis() {
     // Données simulées pour le développement
     const simulatedData = [
         {
-            id: 'colis-001',
-            proprietaire: 'Jean Dupont',
-            description: 'Livre sur la programmation',
-            codeBarre: '9782212676092',
-            dateEnregistrement: '15/05/2023',
-            retire: 'Non',
-            personneRetrait: '',
-            dateSortie: ''
+            ID: 'COLIS-001',
+            Propriétaire: 'Jean Dupont',
+            Description: 'Livre sur la programmation',
+            'Code Barre': '9782212676092',
+            'Date Enregistrement': '15/05/2023',
+            Retiré: 'Non',
+            'Personne Retrait': '',
+            'Date Sortie': ''
         },
         {
-            id: 'colis-002',
-            proprietaire: 'Marie Martin',
-            description: 'Téléphone portable',
-            codeBarre: '8801642578013',
-            dateEnregistrement: '16/05/2023',
-            retire: 'Oui',
-            personneRetrait: 'Marie Martin',
-            dateSortie: '18/05/2023'
-        },
-        {
-            id: 'colis-003',
-            proprietaire: 'Pierre Durand',
-            description: 'Vêtements',
-            codeBarre: '1234567890123',
-            dateEnregistrement: '17/05/2023',
-            retire: 'Non',
-            personneRetrait: '',
-            dateSortie: ''
-        },
-        {
-            id: 'colis-004',
-            proprietaire: 'Sophie Bernard',
-            description: 'Carte mère d\'ordinateur',
-            codeBarre: '4567891230456',
-            dateEnregistrement: '18/05/2023',
-            retire: 'Non',
-            personneRetrait: '',
-            dateSortie: ''
-        },
-        {
-            id: 'colis-005',
-            proprietaire: 'Jean Dupont',
-            description: 'Câble USB-C',
-            codeBarre: '7890123456789',
-            dateEnregistrement: '19/05/2023',
-            retire: 'Non',
-            personneRetrait: '',
-            dateSortie: ''
-        },
-        {
-            id: 'colis-006',
-            proprietaire: 'Lucas Petit',
-            description: 'Chargeur de portable',
-            codeBarre: '2345678901234',
-            dateEnregistrement: '20/05/2023',
-            retire: 'Oui',
-            personneRetrait: 'Lucas Petit',
-            dateSortie: '21/05/2023'
-        },
-        {
-            id: 'colis-007',
-            proprietaire: 'Emma Roux',
-            description: 'Enceinte Bluetooth',
-            codeBarre: '3456789012345',
-            dateEnregistrement: '21/05/2023',
-            retire: 'Non',
-            personneRetrait: '',
-            dateSortie: ''
-        },
-        {
-            id: 'colis-008',
-            proprietaire: 'Thomas Moreau',
-            description: 'Clavier mécanique',
-            codeBarre: '5678901234567',
-            dateEnregistrement: '22/05/2023',
-            retire: 'Non',
-            personneRetrait: '',
-            dateSortie: ''
-        },
-        {
-            id: 'colis-009',
-            proprietaire: 'Jean Dupont',
-            description: 'Souris gaming',
-            codeBarre: '6789012345678',
-            dateEnregistrement: '23/05/2023',
-            retire: 'Non',
-            personneRetrait: '',
-            dateSortie: ''
-        },
-        {
-            id: 'colis-010',
-            proprietaire: 'Chloé Simon',
-            description: 'Disque dur externe 1TB',
-            codeBarre: '8901234567890',
-            dateEnregistrement: '24/05/2023',
-            retire: 'Non',
-            personneRetrait: '',
-            dateSortie: ''
+            ID: 'COLIS-002',
+            Propriétaire: 'Marie Martin',
+            Description: 'Téléphone portable',
+            'Code Barre': '8801642578013',
+            'Date Enregistrement': '16/05/2023',
+            Retiré: 'Oui',
+            'Personne Retrait': 'Marie Martin',
+            'Date Sortie': '18/05/2023'
         }
     ];
     
     colisData = simulatedData;
     setTimeout(() => {
         afficherTableauColis(colisData);
-    }, 500); // Simuler un délai de chargement
+    }, 500);
 }
