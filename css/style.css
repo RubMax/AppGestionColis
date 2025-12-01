@@ -1,0 +1,116 @@
+/* Styles personnalisés pour l'application de gestion de colis */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* Amélioration des cartes */
+.card {
+    border-radius: 10px;
+    border: none;
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+}
+
+/* Style pour les tableaux */
+.table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table thead th {
+    background-color: #e9ecef;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
+/* Boutons personnalisés */
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+/* Onglets personnalisés */
+.nav-tabs .nav-link {
+    color: #495057;
+    border: 1px solid transparent;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    font-weight: 500;
+}
+
+/* Animation pour les éléments de chargement */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Badges personnalisés */
+.badge-retired {
+    background-color: #198754;
+    color: white;
+}
+
+.badge-not-retired {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* Espacement pour les sections */
+section {
+    padding-top: 20px;
+    padding-bottom: 20px;
+}
+
+/* Style pour le footer */
+footer {
+    margin-top: auto;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .display-5 {
+        font-size: 2rem;
+    }
+    
+    .btn-lg {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+    }
+}
+
+/* Style pour les résultats de recherche */
+.search-result-card {
+    border-left: 4px solid #0d6efd;
+    transition: all 0.3s;
+}
+
+.search-result-card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
