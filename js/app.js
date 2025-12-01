@@ -551,4 +551,190 @@ function showAlert(message, type) {
     
     setTimeout(() => {
         if (alertDiv.parentNode) {
-           
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+function showLoadingTable() {
+    const tableBody = document.getElementById('colisTableBody');
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="9" class="text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p class="mt-2">Chargement des données...</p>
+            </td>
+        </tr>
+    `;
+}
+
+function showErrorTable(message) {
+    const tableBody = document.getElementById('colisTableBody');
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="9" class="text-center">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    ${message}
+                </div>
+            </td>
+        </tr>
+    `;
+}
+
+function updateConnectionStatus() {
+    const statusElement = document.getElementById('connectionStatus');
+    if (statusElement) {
+        statusElement.innerHTML = `
+            <i class="fas fa-circle text-success me-1"></i> 
+            Connecté à Google Sheets
+            <small class="d-block">${CONFIG.APPS_SCRIPT_URL.substring(0, 40)}...</small>
+        `;
+    }
+}
+
+// ===========================
+// FONCTIONS DE FALLBACK LOCAL
+// ===========================
+
+function enregistrerColisLocal(proprietaire, codeBarre, description) {
+    const colisLocal = {
+        id: 'LOCAL-' + Date.now(),
+        proprietaire: proprietaire,
+        codeBarre: codeBarre,
+        description: description,
+        'Date Enregistrement': new Date().toLocaleDateString('fr-FR'),
+        'Retiré': 'Non',
+        'Personne Retrait': '',
+        'Date Sortie': ''
+    };
+    
+    // Sauvegarder dans localStorage
+    let localColis = JSON.parse(localStorage.getItem('colis_locaux') || '[]');
+    localColis.push(colisLocal);
+    localStorage.setItem('colis_locaux', JSON.stringify(localColis));
+    
+    // Recharger l'affichage
+    chargerColisLocal();
+}
+
+function chargerColisLocal() {
+    const localColis = JSON.parse(localStorage.getItem('colis_locaux') || '[]');
+    
+    if (localColis.length > 0) {
+        afficherTableauColis(localColis);
+        showAlert(`📁 Mode local: ${localColis.length} colis chargés`, 'info');
+    } else {
+        // Afficher des données de démo
+        simulerChargementColis();
+    }
+}
+
+function simulerChargementColis() {
+    const demoData = [
+        {
+            id: 'DEMO-001',
+            proprietaire: 'Jean Dupont',
+            description: 'Livre sur la programmation',
+            codeBarre: '9782212676092',
+            'Date Enregistrement': '15/05/2023',
+            'Retiré': 'Non',
+            'Personne Retrait': '',
+            'Date Sortie': ''
+        },
+        {
+            id: 'DEMO-002',
+            proprietaire: 'Marie Martin',
+            description: 'Téléphone portable',
+            codeBarre: '8801642578013',
+            'Date Enregistrement': '16/05/2023',
+            'Retiré': 'Oui',
+            'Personne Retrait': 'Marie Martin',
+            'Date Sortie': '18/05/2023'
+        }
+    ];
+    
+    afficherTableauColis(demoData);
+}
+
+function marquerCommeRetireLocal(colisId, personneRetrait) {
+    let localColis = JSON.parse(localStorage.getItem('colis_locaux') || '[]');
+    
+    const colisIndex = localColis.findIndex(colis => colis.id === colisId);
+    if (colisIndex !== -1) {
+        localColis[colisIndex]['Retiré'] = 'Oui';
+        localColis[colisIndex]['Personne Retrait'] = personneRetrait;
+        localColis[colisIndex]['Date Sortie'] = new Date().toLocaleDateString('fr-FR');
+        
+        localStorage.setItem('colis_locaux', JSON.stringify(localColis));
+        chargerColisLocal();
+    }
+}
+
+function rechercherParProprietaireLocal(term) {
+    let localColis = JSON.parse(localStorage.getItem('colis_locaux') || '[]');
+    
+    const results = localColis.filter(colis => 
+        colis.proprietaire.toLowerCase().includes(term.toLowerCase()) && 
+        colis['Retiré'] === 'Non'
+    );
+    
+    afficherResultatsProprietaire(results);
+}
+
+function rechercherParCodeBarreLocal(term) {
+    let localColis = JSON.parse(localStorage.getItem('colis_locaux') || '[]');
+    
+    const result = localColis.find(colis => colis.codeBarre === term);
+    afficherResultatCodeBarre(result || null);
+}
+
+// Fonction pour exporter les données locales vers Google Sheets
+function exporterVersGoogleSheets() {
+    const localColis = JSON.parse(localStorage.getItem('colis_locaux') || '[]');
+    
+    if (localColis.length === 0) {
+        showAlert('Aucune donnée locale à exporter', 'info');
+        return;
+    }
+    
+    showAlert(`Export de ${localColis.length} colis vers Google Sheets...`, 'info');
+    
+    // Envoyer chaque colis
+    localColis.forEach((colis, index) => {
+        setTimeout(() => {
+            const data = {
+                action: 'create',
+                proprietaire: colis.proprietaire,
+                codeBarre: colis.codeBarre,
+                description: colis.description
+            };
+            
+            fetch(CONFIG.APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    console.log(`Colis ${index + 1} exporté:`, result.id);
+                    
+                    // Supprimer du stockage local après export réussi
+                    if (index === localColis.length - 1) {
+                        localStorage.removeItem('colis_locaux');
+                        showAlert('✅ Tous les colis ont été exportés vers Google Sheets!', 'success');
+                        chargerColis();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Erreur export:', error);
+            });
+        }, index * 1000); // Délai entre chaque envoi
+    });
+}
